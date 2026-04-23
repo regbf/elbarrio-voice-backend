@@ -1,0 +1,24 @@
+{
+  "periods": [
+    {
+      "name": "Valentine's Day",
+      "start_date": "2026-02-10",
+      "end_date": "2026-02-15",
+      "high_demand": true,
+      "recommend_advance_booking": true
+    },
+    {
+      "name": "Christmas Season",
+      "start_date": "2026-12-01",
+      "end_date": "2026-12-31",
+      "high_demand": true,
+      "group_requests_priority": true
+    },
+    {
+      "name": "Summer Terrace Season",
+      "start_date": "2026-05-15",
+      "end_date": "2026-09-15",
+      "terrace_high_demand": true
+    }
+  ]
+}

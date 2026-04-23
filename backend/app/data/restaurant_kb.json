@@ -1,0 +1,25 @@
+{
+  "restaurant": {
+    "name": "El Barrio",
+    "website": "https://www.elbarrio.lu/",
+    "phone": "+352 26 43 15 03",
+    "address": "2 Rue Erasme, Kirchberg, Luxembourg City, LU 1468",
+    "category": "Mediterranean restaurant",
+    "booking_provider": "Zenchef"
+  },
+  "brand": {
+    "style": ["premium", "vibrant", "warm", "social", "elegant"],
+    "experience": [
+      "Mediterranean dining",
+      "good for groups",
+      "special occasions",
+      "social atmosphere"
+    ]
+  },
+  "policies": {
+    "special_requests_subject_to_availability": true,
+    "group_bookings_recommended_in_advance": true,
+    "terrace_requests_subject_to_availability": true,
+    "menu_items_subject_to_change": true
+  }
+}

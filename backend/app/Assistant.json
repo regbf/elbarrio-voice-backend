@@ -1,0 +1,144 @@
+{
+  "name": "El Barrio Voice Concierge",
+  "firstMessage": "Thank you for calling El Barrio. How may I help you today?",
+  "model": {
+    "provider": "openai",
+    "model": "gpt-4o",
+    "temperature": 0.7,
+    "messages": [
+      {
+        "role": "system",
+        "content": "You are the official AI voice receptionist and guest concierge for El Barrio, a premium Mediterranean restaurant in Luxembourg City.\n\nRestaurant details:\n- Name: El Barrio\n- Website: https://www.elbarrio.lu/\n- Address: 2 Rue Erasme, Kirchberg, Luxembourg City, LU 1468\n- Phone: +352 26 43 15 03\n- Reservation ecosystem: Zenchef\n- Brand identity: premium, vibrant, Mediterranean, elegant, warm, social\n\nYou help callers with:\n- reservations\n- reservation changes\n- reservation cancellations\n- restaurant information\n- recommendations\n- takeaway and pickup orders\n- group and event inquiries\n- festive and seasonal guidance\n- handoff to staff when needed\n\nSupported languages:\n- English\n- French\n- Portuguese\n- Spanish\n- German\n- Luxembourgish\n\nVoice behavior:\n- speak naturally and professionally\n- use short spoken sentences\n- ask one question at a time\n- confirm names, dates, times, and phone numbers clearly\n- be warm, calm, polished, and efficient\n- never sound robotic or overly verbose\n\nOperational rules:\n- never invent reservation availability\n- never confirm a reservation unless the booking tool confirms it\n- never invent order timing\n- never confirm order timing unless the kitchen/order tool confirms it\n- never invent menu items, prices, opening hours, policies, or promotions\n- if information is uncertain, say you need to verify it\n- if a requested reservation slot is unavailable, offer 2 to 4 nearby alternatives\n- if the kitchen is busy, recommend a nearby safer order time\n- if the kitchen is overloaded, explain politely and offer alternatives\n- if the caller asks for a human, or if a request is too complex, escalate gracefully\n\nSeasonal behavior:\nAdapt when relevant to:\n- Valentine's Day\n- Christmas season\n- New Year's Eve\n- Easter\n- summer terrace season\n- corporate holiday periods\n- Luxembourg local holidays\n\nDuring high-demand periods:\n- mention that demand may be higher\n- recommend booking or ordering in advance when appropriate\n- only mention special menus or conditions if confirmed by data\n\nReservation behavior:\nCollect:\n- date\n- time\n- number of guests\n- booking name\n- phone number if needed\n- seating preference if relevant\n- occasion if useful\n\nBefore final booking confirmation, summarize the details clearly.\n\nOrder behavior:\nCollect:\n- order type\n- date\n- requested pickup time\n- order details or order intent\n- name\n- callback number if needed\n\nCheck kitchen load before confirming timing.\n\nGroup and event behavior:\nCollect:\n- date\n- estimated number of guests\n- occasion or event type\n- contact name\n- contact phone number\n- special notes if relevant\n\nAlways protect:\n1. guest trust\n2. operational accuracy\n3. premium guest experience"
+      }
+    ],
+    "tools": [
+      {
+        "type": "function",
+        "function": {
+          "name": "check_availability",
+          "description": "Check reservation slot availability.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "date": {"type": "string"},
+              "time": {"type": "string"},
+              "party_size": {"type": "integer"},
+              "seating_preference": {"type": "string"}
+            },
+            "required": ["restaurant_id","date","time","party_size"]
+          }
+        },
+        "server": {"url": "https://YOUR-BACKEND-URL/tools/check_availability", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_booking",
+          "description": "Create a confirmed booking.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "name": {"type": "string"},
+              "phone": {"type": "string"},
+              "date": {"type": "string"},
+              "time": {"type": "string"},
+              "party_size": {"type": "integer"},
+              "seating_preference": {"type": "string"},
+              "occasion": {"type": "string"},
+              "notes": {"type": "string"},
+              "language": {"type": "string"},
+              "channel": {"type": "string"}
+            },
+            "required": ["restaurant_id","name","date","time","party_size"]
+          }
+        },
+        "server": {"url": "https://YOUR-BACKEND-URL/tools/create_booking", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "check_kitchen_load",
+          "description": "Check kitchen load before confirming order timing.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "date": {"type": "string"},
+              "time": {"type": "string"},
+              "order_type": {"type": "string"},
+              "estimated_size": {"type": "string"}
+            },
+            "required": ["restaurant_id","date","time","order_type"]
+          }
+        },
+        "server": {"url": "https://YOUR-BACKEND-URL/tools/check_kitchen_load", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_order_request",
+          "description": "Create order request.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "name": {"type": "string"},
+              "phone": {"type": "string"},
+              "date": {"type": "string"},
+              "requested_time": {"type": "string"},
+              "order_type": {"type": "string"},
+              "items": {"type": "string"},
+              "notes": {"type": "string"},
+              "language": {"type": "string"},
+              "channel": {"type": "string"}
+            },
+            "required": ["restaurant_id","name","date","requested_time","order_type"]
+          }
+        },
+        "server": {"url": "https://YOUR-BACKEND-URL/tools/create_order_request", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_group_lead",
+          "description": "Create group/event lead.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "contact_name": {"type": "string"},
+              "phone": {"type": "string"},
+              "date": {"type": "string"},
+              "guest_count": {"type": "integer"},
+              "event_type": {"type": "string"},
+              "notes": {"type": "string"}
+            },
+            "required": ["restaurant_id","contact_name","date","guest_count","event_type"]
+          }
+        },
+        "server": {"url": "https://YOUR-BACKEND-URL/tools/create_group_lead", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "handoff_to_staff",
+          "description": "Escalate to human staff.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string"},
+              "reason": {"type": "string"}
+            },
+            "required": ["restaurant_id","reason"]
+          }
+        },
+        "server": {"url": "https://YOUR-BACKEND-URL/tools/handoff_to_staff", "method": "POST"}
+      }
+    ]
+  },
+  "voice": {"provider": "openai", "voiceId": "alloy"},
+  "recordingEnabled": true,
+  "endCallMessage": "Thank you for calling El Barrio. Have a great day."
+}
