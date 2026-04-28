@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+import json
+from fastapi import APIRouter, Request, Response
 from app.models.schemas import *
 from app.services.reservation_service import (
     check_availability,
@@ -16,100 +17,154 @@ from app.services.analytics_service import track_metric
 
 router = APIRouter(prefix="/tools", tags=["tools"])
 
+# ---------- Helper para extrair toolCallId e parâmetros ----------
+async def extract_tool_data(request: Request):
+    body = await request.json()
+    tool_call_id = body.get("toolCallId")
+    # Alguns casos: Vapi envia dentro de 'function'
+    params = body.get("function", {}).get("parameters", body)
+    return tool_call_id, params
+
+# ---------- Preflight HEAD/GET para todas as rotas ----------
+def add_preflight(endpoint: str):
+    @router.head(endpoint)
+    @router.get(endpoint)
+    async def preflight():
+        return Response(status_code=200, content="OK")
+
+# Lista de todos os endpoints
+endpoints = [
+    "check_availability", "create_booking", "find_booking",
+    "modify_booking", "cancel_booking", "restaurant_kb",
+    "get_seasonal_context", "check_kitchen_load", "suggest_order_slot",
+    "create_order_request", "create_group_lead", "handoff_to_staff"
+]
+for ep in endpoints:
+    add_preflight(ep)
+
+# ---------- Ferramentas com resposta no formato Vapi ----------
 @router.post("/check_availability")
-def tool_check_availability(req: AvailabilityRequest):
-    log_event("check_availability_called", req.restaurant_id, req.dict())
-    track_metric("reservation_availability_check", req.restaurant_id, 1, {"channel": "voice"})
-    result = check_availability(req.restaurant_id, req.date, req.time, req.party_size, req.seating_preference)
-    log_event("check_availability_result", req.restaurant_id, result)
-    return result
+async def tool_check_availability(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    result = check_availability(
+        params.get("restaurant_id"),
+        params.get("date"),
+        params.get("time"),
+        params.get("party_size"),
+        params.get("seating_preference")
+    )
+    log_event("check_availability_called", params.get("restaurant_id"), params)
+    track_metric("reservation_availability_check", params.get("restaurant_id"), 1, {"channel": "voice"})
+    log_event("check_availability_result", params.get("restaurant_id"), result)
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/create_booking")
-def tool_create_booking(req: CreateBookingRequest):
-    log_event("create_booking_called", req.restaurant_id, req.dict())
-    track_metric("reservation_attempt", req.restaurant_id, 1, {"channel": req.channel})
-    result = create_booking(req.restaurant_id, req.dict())
+async def tool_create_booking(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("create_booking_called", params.get("restaurant_id"), params)
+    track_metric("reservation_attempt", params.get("restaurant_id"), 1, {"channel": params.get("channel", "voice")})
+    result = create_booking(params.get("restaurant_id"), params)
     if result.get("booking_id"):
-        track_metric("reservation_created", req.restaurant_id, 1, {"channel": req.channel})
-    log_event("create_booking_result", req.restaurant_id, result)
-    return result
+        track_metric("reservation_created", params.get("restaurant_id"), 1, {"channel": params.get("channel")})
+    log_event("create_booking_result", params.get("restaurant_id"), result)
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/find_booking")
-def tool_find_booking(req: FindBookingRequest):
-    log_event("find_booking_called", req.restaurant_id, req.dict())
-    result = find_booking(req.restaurant_id, req.name, req.phone_or_reference)
-    log_event("find_booking_result", req.restaurant_id, result)
-    return result
+async def tool_find_booking(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("find_booking_called", params.get("restaurant_id"), params)
+    result = find_booking(params.get("restaurant_id"), params.get("name"), params.get("phone_or_reference"))
+    log_event("find_booking_result", params.get("restaurant_id"), result)
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/modify_booking")
-def tool_modify_booking(req: ModifyBookingRequest):
-    log_event("modify_booking_called", req.restaurant_id, req.dict())
-    result = modify_booking(req.restaurant_id, req.booking_id, req.updates)
+async def tool_modify_booking(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("modify_booking_called", params.get("restaurant_id"), params)
+    result = modify_booking(params.get("restaurant_id"), params.get("booking_id"), params.get("updates"))
     if result.get("success"):
-        track_metric("reservation_modified", req.restaurant_id, 1)
-    log_event("modify_booking_result", req.restaurant_id, result)
-    return result
+        track_metric("reservation_modified", params.get("restaurant_id"), 1)
+    log_event("modify_booking_result", params.get("restaurant_id"), result)
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/cancel_booking")
-def tool_cancel_booking(req: CancelBookingRequest):
-    log_event("cancel_booking_called", req.restaurant_id, req.dict())
-    result = cancel_booking(req.restaurant_id, req.booking_id)
+async def tool_cancel_booking(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("cancel_booking_called", params.get("restaurant_id"), params)
+    result = cancel_booking(params.get("restaurant_id"), params.get("booking_id"))
     if result.get("success"):
-        track_metric("reservation_cancelled", req.restaurant_id, 1)
-    log_event("cancel_booking_result", req.restaurant_id, result)
-    return result
+        track_metric("reservation_cancelled", params.get("restaurant_id"), 1)
+    log_event("cancel_booking_result", params.get("restaurant_id"), result)
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/restaurant_kb")
-def tool_restaurant_kb(req: KBQueryRequest):
-    log_event("restaurant_kb_called", req.restaurant_id, req.dict())
-    result = query_kb(req.restaurant_id, req.query)
-    return result
+async def tool_restaurant_kb(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("restaurant_kb_called", params.get("restaurant_id"), params)
+    result = query_kb(params.get("restaurant_id"), params.get("query"))
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/get_seasonal_context")
-def tool_get_seasonal_context(req: SeasonalContextRequest):
-    log_event("seasonal_context_called", req.restaurant_id, req.dict())
-    result = get_seasonal_context(req.restaurant_id, req.date)
-    return result
+async def tool_get_seasonal_context(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("seasonal_context_called", params.get("restaurant_id"), params)
+    result = get_seasonal_context(params.get("restaurant_id"), params.get("date"))
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/check_kitchen_load")
-def tool_check_kitchen_load(req: KitchenLoadRequest):
-    log_event("check_kitchen_load_called", req.restaurant_id, req.dict())
-    result = check_kitchen_load(req.restaurant_id, req.date, req.time, req.order_type, req.estimated_size)
+async def tool_check_kitchen_load(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("check_kitchen_load_called", params.get("restaurant_id"), params)
+    result = check_kitchen_load(
+        params.get("restaurant_id"),
+        params.get("date"),
+        params.get("time"),
+        params.get("order_type"),
+        params.get("estimated_size")
+    )
     if result.get("status") == "busy":
-        track_metric("kitchen_busy_detected", req.restaurant_id, 1, {"time": req.time})
+        track_metric("kitchen_busy_detected", params.get("restaurant_id"), 1, {"time": params.get("time")})
     if result.get("status") == "overloaded":
-        track_metric("kitchen_overloaded_detected", req.restaurant_id, 1, {"time": req.time})
-    log_event("check_kitchen_load_result", req.restaurant_id, result)
-    return result
+        track_metric("kitchen_overloaded_detected", params.get("restaurant_id"), 1, {"time": params.get("time")})
+    log_event("check_kitchen_load_result", params.get("restaurant_id"), result)
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/suggest_order_slot")
-def tool_suggest_order_slot(req: OrderSlotSuggestionRequest):
-    log_event("suggest_order_slot_called", req.restaurant_id, req.dict())
-    result = suggest_order_slot(req.restaurant_id, req.requested_time, req.kitchen_status)
-    return result
+async def tool_suggest_order_slot(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("suggest_order_slot_called", params.get("restaurant_id"), params)
+    result = suggest_order_slot(
+        params.get("restaurant_id"),
+        params.get("requested_time"),
+        params.get("kitchen_status")
+    )
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/create_order_request")
-def tool_create_order_request(req: CreateOrderRequest):
-    log_event("create_order_request_called", req.restaurant_id, req.dict())
-    track_metric("order_attempt", req.restaurant_id, 1, {"channel": req.channel})
-    result = create_order_request(req.dict())
+async def tool_create_order_request(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("create_order_request_called", params.get("restaurant_id"), params)
+    track_metric("order_attempt", params.get("restaurant_id"), 1, {"channel": params.get("channel", "voice")})
+    result = create_order_request(params)
     if result.get("order_id"):
-        track_metric("order_created", req.restaurant_id, 1, {"channel": req.channel})
-    log_event("create_order_request_result", req.restaurant_id, result)
-    return result
+        track_metric("order_created", params.get("restaurant_id"), 1, {"channel": params.get("channel")})
+    log_event("create_order_request_result", params.get("restaurant_id"), result)
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/create_group_lead")
-def tool_create_group_lead(req: GroupLeadRequest):
-    log_event("create_group_lead_called", req.restaurant_id, req.dict())
-    result = create_group_lead(req.dict())
+async def tool_create_group_lead(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("create_group_lead_called", params.get("restaurant_id"), params)
+    result = create_group_lead(params)
     if result.get("lead_id"):
-        track_metric("group_lead_created", req.restaurant_id, 1)
-    log_event("create_group_lead_result", req.restaurant_id, result)
-    return result
+        track_metric("group_lead_created", params.get("restaurant_id"), 1)
+    log_event("create_group_lead_result", params.get("restaurant_id"), result)
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
 @router.post("/handoff_to_staff")
-def tool_handoff_to_staff(req: HandoffRequest):
-    log_event("handoff_to_staff_called", req.restaurant_id, req.dict())
-    result = handoff_to_staff(req.restaurant_id, req.reason)
-    track_metric("handoff_triggered", req.restaurant_id, 1, {"reason": req.reason})
-    return result
+async def tool_handoff_to_staff(request: Request):
+    tool_call_id, params = await extract_tool_data(request)
+    log_event("handoff_to_staff_called", params.get("restaurant_id"), params)
+    result = handoff_to_staff(params.get("restaurant_id"), params.get("reason"))
+    track_metric("handoff_triggered", params.get("restaurant_id"), 1, {"reason": params.get("reason")})
+    return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
