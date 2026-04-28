@@ -58,6 +58,11 @@ async def tool_check_availability(request: Request):
     log_event("check_availability_result", params.get("restaurant_id"), result)
     return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
+@router.head("/create_booking")
+@router.get("/create_booking")
+async def create_booking_preflight():
+    return Response(status_code=200, content="OK")
+
 @router.post("/create_booking")
 async def tool_create_booking(request: Request):
     tool_call_id, params = await extract_tool_data(request)
