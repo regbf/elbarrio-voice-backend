@@ -58,6 +58,36 @@ async def tool_check_availability(request: Request):
     log_event("check_availability_result", params.get("restaurant_id"), result)
     return {"results": [{"toolCallId": tool_call_id, "result": json.dumps(result)}]}
 
+@router.post("/create_booking")
+async def tool_create_booking(request: Request):
+    # Log do pedido completo
+    print("=== REQUEST RECEIVED ===")
+    print("Headers:", dict(request.headers))
+    body = await request.json()
+    print("Body:", json.dumps(body, indent=2))
+    
+    tool_call_id = body.get("toolCallId")
+    if not tool_call_id:
+        tool_call_id = "fallback-" + str(uuid.uuid4())
+        print("WARNING: toolCallId not provided, using", tool_call_id)
+    
+    params = body.get("function", {}).get("parameters", body)
+    # ... resto do código ...
+    
+    result = create_booking(...)
+    
+    response_data = {
+        "results": [
+            {
+                "toolCallId": tool_call_id,
+                "result": json.dumps(result)
+            }
+        ]
+    }
+    print("=== RESPONSE SENT ===")
+    print(json.dumps(response_data, indent=2))
+    return response_data
+
 @router.head("/create_booking")
 @router.get("/create_booking")
 async def create_booking_preflight():
