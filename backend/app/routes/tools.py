@@ -16,6 +16,79 @@ from app.services.logging_service import log_event
 from app.services.analytics_service import track_metric
 
 router = APIRouter(prefix="/tools", tags=["tools"])
+import json
+import uuid
+from fastapi import APIRouter, Request, Response
+import logging
+
+# Configurar logging mais verboso (opcional)
+logging.basicConfig(level=logging.DEBUG)
+
+router = APIRouter(prefix="/tools", tags=["tools"])
+
+# ... (outros imports e código existente)
+
+@router.post("/create_booking")
+async def tool_create_booking(request: Request):
+    # ========== LOG DETALHADO ==========
+    print("\n=== 🔍 NOVA REQUISIÇÃO RECEBIDA ===")
+    print(f"Method: {request.method}")
+    print(f"Headers: {dict(request.headers)}")
+    
+    # Capturar o corpo da requisição (raw e JSON)
+    body_raw = await request.body()
+    print(f"Raw Body: {body_raw}")
+    
+    try:
+        body = await request.json()
+        print(f"Parsed JSON: {json.dumps(body, indent=2)}")
+    except Exception as e:
+        print(f"Erro ao fazer parse do JSON: {e}")
+        body = {}
+    
+    # Extrair toolCallId (muito importante)
+    tool_call_id = body.get("toolCallId")
+    if not tool_call_id:
+        tool_call_id = body.get("tool_call_id")  # tentar variação
+    if not tool_call_id:
+        tool_call_id = f"fallback-{uuid.uuid4().hex[:8]}"
+        print(f"⚠️ toolCallId não encontrado! Usando fallback: {tool_call_id}")
+    else:
+        print(f"✅ toolCallId recebido: {tool_call_id}")
+    
+    # Extrair parâmetros (podem estar dentro de "function" ou diretamente)
+    params = body.get("function", {}).get("parameters", body)
+    print(f"Parâmetros extraídos: {json.dumps(params, indent=2)}")
+    
+    # ========== LÓGICA DE NEGÓCIO (maintain your existing logic) ==========
+    # Exemplo: chamar a sua função create_booking
+    # (você já tem isso, só vou ilustrar)
+    result = create_booking(params.get("restaurant_id"), params)
+    # Nota: ajuste conforme a sua implementação real
+    
+    # Garantir que result é um dicionário
+    if not isinstance(result, dict):
+        result = {"status": "ok", "message": str(result)}
+    
+    # ========== PREPARAR RESPOSTA NO FORMATO VAPI ==========
+    response_data = {
+        "results": [
+            {
+                "toolCallId": tool_call_id,
+                "result": json.dumps(result, ensure_ascii=False)
+            }
+        ]
+    }
+    
+    print(f"📤 RESPOSTA ENVIADA: {json.dumps(response_data, indent=2)}")
+    print("=== FIM DA REQUISIÇÃO ===\n")
+    
+    # Forçar Content-Type (embora FastAPI já faça)
+    return Response(
+        content=json.dumps(response_data),
+        media_type="application/json",
+        status_code=200
+    )
 
 # ---------- Helper para extrair toolCallId e parâmetros ----------
 async def extract_tool_data(request: Request):
