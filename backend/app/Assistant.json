@@ -29,7 +29,7 @@
             "required": ["restaurant_id","date","time","party_size"]
           }
         },
-        "server": {"url": "https://YOUR-BACKEND-URL/tools/check_availability", "method": "POST"}
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/check_availability", "method": "POST"}
       },
       {
         "type": "function",
@@ -54,7 +54,7 @@
             "required": ["restaurant_id","name","date","time","party_size"]
           }
         },
-        "server": {"url": "https://YOUR-BACKEND-URL/tools/create_booking", "method": "POST"}
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/create_booking", "method": "POST"}
       },
       {
         "type": "function",
@@ -73,7 +73,7 @@
             "required": ["restaurant_id","date","time","order_type"]
           }
         },
-        "server": {"url": "https://YOUR-BACKEND-URL/tools/check_kitchen_load", "method": "POST"}
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/check_kitchen_load", "method": "POST"}
       },
       {
         "type": "function",
@@ -97,7 +97,7 @@
             "required": ["restaurant_id","name","date","requested_time","order_type"]
           }
         },
-        "server": {"url": "https://YOUR-BACKEND-URL/tools/create_order_request", "method": "POST"}
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/create_order_request", "method": "POST"}
       },
       {
         "type": "function",
@@ -118,7 +118,7 @@
             "required": ["restaurant_id","contact_name","date","guest_count","event_type"]
           }
         },
-        "server": {"url": "https://YOUR-BACKEND-URL/tools/create_group_lead", "method": "POST"}
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/create_group_lead", "method": "POST"}
       },
       {
         "type": "function",
@@ -134,7 +134,7 @@
             "required": ["restaurant_id","reason"]
           }
         },
-        "server": {"url": "https://YOUR-BACKEND-URL/tools/handoff_to_staff", "method": "POST"}
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/handoff_to_staff", "method": "POST"}
       }
     ]
   },
