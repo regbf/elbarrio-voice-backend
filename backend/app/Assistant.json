@@ -16,17 +16,17 @@
         "type": "function",
         "function": {
           "name": "check_availability",
-          "description": "Check reservation slot availability.",
+          "description": "Check reservation slot availability for a given date, time and party size.",
           "parameters": {
             "type": "object",
             "properties": {
-              "restaurant_id": {"type": "string"},
-              "date": {"type": "string"},
-              "time": {"type": "string"},
-              "party_size": {"type": "integer"},
-              "seating_preference": {"type": "string"}
+              "restaurant_id": {"type": "string", "description": "Restaurant identifier, always use 'elbarrio'"},
+              "date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
+              "time": {"type": "string", "description": "Time in HH:MM format"},
+              "party_size": {"type": "integer", "description": "Number of guests"},
+              "seating_preference": {"type": "string", "description": "Seating preference e.g. inside, terrace"}
             },
-            "required": ["restaurant_id","date","time","party_size"]
+            "required": ["restaurant_id", "date", "time", "party_size"]
           }
         },
         "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/check_availability", "method": "POST"}
@@ -35,23 +35,23 @@
         "type": "function",
         "function": {
           "name": "create_booking",
-          "description": "Create a confirmed booking.",
+          "description": "Create a confirmed reservation. Only call after check_availability confirms availability.",
           "parameters": {
             "type": "object",
             "properties": {
-              "restaurant_id": {"type": "string"},
-              "name": {"type": "string"},
-              "phone": {"type": "string"},
-              "date": {"type": "string"},
-              "time": {"type": "string"},
-              "party_size": {"type": "integer"},
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "name": {"type": "string", "description": "Guest full name"},
+              "phone": {"type": "string", "description": "Guest phone number"},
+              "date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
+              "time": {"type": "string", "description": "Time in HH:MM format"},
+              "party_size": {"type": "integer", "description": "Number of guests"},
               "seating_preference": {"type": "string"},
-              "occasion": {"type": "string"},
+              "occasion": {"type": "string", "description": "e.g. birthday, anniversary"},
               "notes": {"type": "string"},
               "language": {"type": "string"},
               "channel": {"type": "string"}
             },
-            "required": ["restaurant_id","name","date","time","party_size"]
+            "required": ["restaurant_id", "name", "date", "time", "party_size"]
           }
         },
         "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/create_booking", "method": "POST"}
@@ -59,18 +59,103 @@
       {
         "type": "function",
         "function": {
-          "name": "check_kitchen_load",
-          "description": "Check kitchen load before confirming order timing.",
+          "name": "find_booking",
+          "description": "Find an existing reservation by guest name or phone/reference number.",
           "parameters": {
             "type": "object",
             "properties": {
-              "restaurant_id": {"type": "string"},
-              "date": {"type": "string"},
-              "time": {"type": "string"},
-              "order_type": {"type": "string"},
-              "estimated_size": {"type": "string"}
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "name": {"type": "string", "description": "Guest name"},
+              "phone_or_reference": {"type": "string", "description": "Phone number or booking reference"}
             },
-            "required": ["restaurant_id","date","time","order_type"]
+            "required": ["restaurant_id", "name"]
+          }
+        },
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/find_booking", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "modify_booking",
+          "description": "Modify an existing reservation (date, time, party size, notes, etc.).",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "booking_id": {"type": "string", "description": "Booking ID to modify"},
+              "updates": {
+                "type": "object",
+                "description": "Fields to update, e.g. {\"date\": \"2026-06-01\", \"time\": \"20:00\", \"party_size\": 4}"
+              }
+            },
+            "required": ["restaurant_id", "booking_id", "updates"]
+          }
+        },
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/modify_booking", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "cancel_booking",
+          "description": "Cancel an existing reservation.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "booking_id": {"type": "string", "description": "Booking ID to cancel"}
+            },
+            "required": ["restaurant_id", "booking_id"]
+          }
+        },
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/cancel_booking", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "restaurant_kb",
+          "description": "Query the restaurant knowledge base for information about menu, hours, policies, allergens, parking, or any general question about El Barrio.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "query": {"type": "string", "description": "The question to look up"}
+            },
+            "required": ["restaurant_id", "query"]
+          }
+        },
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/restaurant_kb", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "get_seasonal_context",
+          "description": "Get seasonal or festive context for a given date (e.g. Valentine's Day, Christmas, local holidays).",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "date": {"type": "string", "description": "Date in YYYY-MM-DD format"}
+            },
+            "required": ["restaurant_id", "date"]
+          }
+        },
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/get_seasonal_context", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "check_kitchen_load",
+          "description": "Check kitchen load before confirming order or pickup timing. Always call this before create_order_request.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
+              "time": {"type": "string", "description": "Requested pickup time in HH:MM format"},
+              "order_type": {"type": "string", "description": "e.g. takeaway, delivery"},
+              "estimated_size": {"type": "string", "description": "Estimated order size e.g. small, medium, large"}
+            },
+            "required": ["restaurant_id", "date", "time", "order_type"]
           }
         },
         "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/check_kitchen_load", "method": "POST"}
@@ -78,23 +163,40 @@
       {
         "type": "function",
         "function": {
-          "name": "create_order_request",
-          "description": "Create order request.",
+          "name": "suggest_order_slot",
+          "description": "Suggest an alternative pickup time when the kitchen is busy or overloaded.",
           "parameters": {
             "type": "object",
             "properties": {
-              "restaurant_id": {"type": "string"},
-              "name": {"type": "string"},
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "requested_time": {"type": "string", "description": "The originally requested time in HH:MM format"},
+              "kitchen_status": {"type": "string", "description": "Status returned by check_kitchen_load e.g. busy, overloaded"}
+            },
+            "required": ["restaurant_id", "requested_time", "kitchen_status"]
+          }
+        },
+        "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/suggest_order_slot", "method": "POST"}
+      },
+      {
+        "type": "function",
+        "function": {
+          "name": "create_order_request",
+          "description": "Create a takeaway or pickup order request. Only call after check_kitchen_load confirms timing is acceptable.",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "name": {"type": "string", "description": "Customer name"},
               "phone": {"type": "string"},
-              "date": {"type": "string"},
-              "requested_time": {"type": "string"},
-              "order_type": {"type": "string"},
-              "items": {"type": "string"},
+              "date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
+              "requested_time": {"type": "string", "description": "Pickup time in HH:MM format"},
+              "order_type": {"type": "string", "description": "e.g. takeaway, delivery"},
+              "items": {"type": "string", "description": "Description of items ordered"},
               "notes": {"type": "string"},
               "language": {"type": "string"},
               "channel": {"type": "string"}
             },
-            "required": ["restaurant_id","name","date","requested_time","order_type"]
+            "required": ["restaurant_id", "name", "date", "requested_time", "order_type"]
           }
         },
         "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/create_order_request", "method": "POST"}
@@ -103,19 +205,19 @@
         "type": "function",
         "function": {
           "name": "create_group_lead",
-          "description": "Create group/event lead.",
+          "description": "Create a group or private event lead for large parties or special events.",
           "parameters": {
             "type": "object",
             "properties": {
-              "restaurant_id": {"type": "string"},
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
               "contact_name": {"type": "string"},
               "phone": {"type": "string"},
-              "date": {"type": "string"},
-              "guest_count": {"type": "integer"},
-              "event_type": {"type": "string"},
+              "date": {"type": "string", "description": "Date in YYYY-MM-DD format"},
+              "guest_count": {"type": "integer", "description": "Estimated number of guests"},
+              "event_type": {"type": "string", "description": "e.g. birthday, corporate dinner, wedding"},
               "notes": {"type": "string"}
             },
-            "required": ["restaurant_id","contact_name","date","guest_count","event_type"]
+            "required": ["restaurant_id", "contact_name", "date", "guest_count", "event_type"]
           }
         },
         "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/create_group_lead", "method": "POST"}
@@ -124,14 +226,14 @@
         "type": "function",
         "function": {
           "name": "handoff_to_staff",
-          "description": "Escalate to human staff.",
+          "description": "Escalate the call to a human staff member. Use when the caller explicitly asks for a person, or when the request is too complex to handle automatically.",
           "parameters": {
             "type": "object",
             "properties": {
-              "restaurant_id": {"type": "string"},
-              "reason": {"type": "string"}
+              "restaurant_id": {"type": "string", "description": "Always use 'elbarrio'"},
+              "reason": {"type": "string", "description": "Reason for escalation"}
             },
-            "required": ["restaurant_id","reason"]
+            "required": ["restaurant_id", "reason"]
           }
         },
         "server": {"url": "https://elbarrio-voice-backend.onrender.com/tools/handoff_to_staff", "method": "POST"}
